@@ -1,29 +1,161 @@
 ---
-title: "datathon"
+title: "Datathon"
+author: Andrzej, Michal i Karolina
 output: ioslides_presentation
 ---
 
-## R Markdown
+## Problem badawczy
 
-This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r, echo=FALSE,message=FALSE}
+library(dplyr)
+library(rgdal)
+library(leaflet)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
+cov_dat <- read.csv("data/BAZA-MPK.csv")
 
-## Slide with Bullets
+shp1 <- readOGR("./dem-rejurb-rejstat-shp/REJURB_20151231.shp", verbose = FALSE) %>% 
+    spTransform(CRS("+proj=longlat +datum=WGS84"))
 
-- Bullet 1
-- Bullet 2
-- Bullet 3
+shp1@data <- shp1@data %>% select(c(1,2,14,15,16,17)) %>% mutate( 
+  pw7_24 = (shp1@data$W7_12+shp1@data$W13_15+ shp1@data$W16_18+shp1@data$W19_24)/(shp1$SUMA-shp1@data$W0_2-shp1@data$W3_6 ),
+  pw25_59 = (shp1@data$W25_34+ shp1@data$W35_44+ shp1@data$W45_59K64M)/(shp1$SUMA-shp1@data$W0_2-shp1@data$W3_6),
+  pw60_100 = (shp1@data$W60K65M_79+shp1@data$W80_I_W)/(shp1$SUMA-shp1@data$W0_2-shp1@data$W3_6))
 
-## Slide with R Code and Output
 
-```{r}
-summary(cars)
+shp1@data <- inner_join(shp1@data,
+                        read.csv2("./results/stop_covers.csv") %>% 
+                          group_by(reg) %>% 
+                          summarise(nap_sum = sum(nap_sum, na.rm = TRUE),
+                                    n_stops = length(unique(Nazwa.przystanku))) %>% 
+                          rename(REJON = reg)) 
+
 ```
 
-## Slide with Plot
+Zmienność przepływu pasażerów przez przystanki w zależności od struktury demograficznej regionu.
+
+## Dane
+
+Obciążenie komunikacji miejskiej we Wrocławiu (BAZA-MPK.ods):
+ 
+ -- `r length(unique(cov_dat[["Nazwa.przystanku"]]))` przystanków;
+ -- 77 regionów.
+## 7-24 lata
 
 ```{r, echo=FALSE}
-plot(cars)
+pal <- colorNumeric(
+  palette = "YlGnBu",
+  domain = shp1@data$pw7_24
+)
+
+leaflet(shp1) %>%
+    addPolygons(
+      stroke = FALSE, fillOpacity = 0.8, smoothFactor = 0.5, 
+      color = ~pal(pw7_24)) %>%
+    addTiles() %>% 
+  addPolylines(weight = 2, color = "red") %>%
+  addLegend("bottomright", pal = pal, values = ~pw7_24,
+    title = "7-24 lata",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 2
+  )
+
 ```
 
+
+## 25-59 lat
+
+```{r, echo=FALSE}
+pal <- colorNumeric(
+  palette = "YlGnBu",
+  domain = shp1@data$pw25_59
+)
+
+leaflet(shp1) %>%
+    addPolygons(
+      stroke = FALSE, fillOpacity = 0.8, smoothFactor = 0.5, 
+      color = ~pal(pw25_59)) %>%
+    addTiles() %>% 
+  addPolylines(weight = 2, color = "red") %>%
+  addLegend("bottomright", pal = pal, values = ~pw25_59,
+    title = "25-59 lat",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 2
+  )
+
+```
+
+
+## 60-100 lat
+
+```{r, echo=FALSE}
+pal <- colorNumeric(
+  palette = "YlGnBu",
+  domain = shp1@data$pw60_100
+)
+
+leaflet(shp1) %>%
+    addPolygons(
+      stroke = FALSE, fillOpacity = 0.8, smoothFactor = 0.5, 
+      color = ~pal(pw60_100)) %>%
+    addTiles() %>% 
+  addPolylines(weight = 2, color = "red") %>%
+  addLegend("bottomright", pal = pal, values = ~pw60_100,
+    title = "60-100 lat",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 2
+  )
+
+```
+
+## Obłożenie komunikacji
+
+```{r, echo=FALSE}
+pal <- colorNumeric(
+  palette = "YlGnBu",
+  domain = shp1@data$nap_sum
+)
+
+leaflet(shp1) %>%
+    addPolygons(
+      stroke = FALSE, fillOpacity = 0.8, smoothFactor = 0.5, 
+      color = ~pal(nap_sum)) %>%
+    addTiles() %>% 
+  addPolylines(weight = 2, color = "red") %>%
+  addLegend("bottomright", pal = pal, values = ~nap_sum,
+    title = "Napełnienie",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 2
+  )
+
+```
+
+## Liczba przystanków pomiarowych
+
+```{r, echo=FALSE}
+pal <- colorNumeric(
+  palette = "YlGnBu",
+  domain = shp1@data$n_stops
+)
+
+leaflet(shp1) %>%
+  addPolygons(
+    stroke = FALSE, fillOpacity = 0.8, smoothFactor = 0.5, 
+    color = ~pal(n_stops)) %>%
+  addTiles() %>% 
+  addPolylines(weight = 2, color = "red") %>%
+  addLegend("bottomright", pal = pal, values = ~n_stops,
+            title = "Liczba przystanków",
+            labFormat = labelFormat(prefix = ""),
+            opacity = 2
+  )
+
+```
+
+## Model
+
+Regresja logistyczna
+
+```{r, echo=FALSE}
+library(knitr)
+kable(read.csv2("tablica.csv", , check.names = FALSE))
+```

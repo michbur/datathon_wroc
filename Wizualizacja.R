@@ -19,4 +19,10 @@ x <- stops$stop_lat
 y <- stops$stop_lon
 p<-SpatialPoints(data.frame(y, x), 
                  proj4string=CRS("+proj=longlat +datum=WGS84"))
-reg_p <- gCovers(shp1, p, byid = TRUE) 
+reg_p <- gCovers(shp1, p, byid = TRUE, checkValidity= TRUE) 
+
+
+apply(gContains(shp1, p, byid = TRUE), 1, function(i) {
+  reg <- unname(which(i))
+  ifelse(length(reg) != 0, reg, NA)
+})
