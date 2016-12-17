@@ -32,7 +32,18 @@ lapply(as.character((cov_dat[["Kierunek"]])), function(i) {
   splitted <- strsplit(i, "\\([0-9]")[[1]]
   c(name = splitted[1], id = strsplit(splitted[2], ")")[[1]][1])
   }) %>% 
-  do.call(rbind, .) %>% 
-  edit
+  do.call(rbind, .) 
 
-cov_dat[["Nazwa.przystanku"]]
+
+# easy stop names
+easy_sn <- inner_join(stops["stop_name"] %>% mutate(sname = tolower(stop_name)),
+           cov_dat["Nazwa.przystanku"] %>% mutate(sname = tolower(Nazwa.przystanku))
+) %>% 
+  filter(!duplicated(.)) %>% 
+  select(-sname) 
+
+cov_dat["Nazwa.przystanku"] %>% 
+  filter(!duplicated(.)) %>% 
+  filter(!(Nazwa.przystanku %in% easy_sn[["Nazwa.przystanku"]])) %>% 
+  write.csv2("./results/assign_stop_names.csv", row.names = FALSE)
+
