@@ -38,7 +38,10 @@ Zmienność przepływu pasażerów przez przystanki w zależności od struktury 
 Obciążenie komunikacji miejskiej we Wrocławiu (BAZA-MPK.ods):
  
  -- `r length(unique(cov_dat[["Nazwa.przystanku"]]))` przystanków;
+ 
  -- 77 regionów.
+
+
 ## 7-24 lata
 
 ```{r, echo=FALSE}
