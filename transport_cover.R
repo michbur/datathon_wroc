@@ -36,11 +36,12 @@ lapply(as.character((cov_dat[["Kierunek"]])), function(i) {
 
 
 # easy stop names
-easy_sn <- inner_join(stops["stop_name"] %>% mutate(sname = tolower(stop_name)),
+easy_sn <- inner_join(stops[, c("stop_name", "stop_code")] %>% mutate(sname = tolower(stop_name)),
            cov_dat["Nazwa.przystanku"] %>% mutate(sname = tolower(Nazwa.przystanku))
 ) %>% 
   filter(!duplicated(.)) %>% 
-  select(-sname) 
+  select(-sname) %>% 
+  write.csv2("./results/easy_stop_names.csv", row.names = FALSE)
 
 cov_dat["Nazwa.przystanku"] %>% 
   filter(!duplicated(.)) %>% 
