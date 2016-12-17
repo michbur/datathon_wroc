@@ -48,3 +48,30 @@ cov_dat["Nazwa.przystanku"] %>%
   filter(!(Nazwa.przystanku %in% easy_sn[["Nazwa.przystanku"]])) %>% 
   write.csv2("./results/assign_stop_names.csv", row.names = FALSE)
 
+cover_sum <- select(cov_dat, Nazwa.przystanku, Godzinarzeczywista, Napełnienie) %>% 
+  mutate(hour = substr(Godzinarzeczywista, 0, 2)) %>% 
+  select(-Godzinarzeczywista) %>% 
+  group_by(Nazwa.przystanku, hour) %>% 
+  summarise(nap_sum = mean(Napełnienie)) %>% 
+  ungroup %>% 
+  mutate(Nazwa.przystanku = as.character(Nazwa.przystanku))
+
+stop_id <- rbind(read.csv("results/assign_stop_names2.csv") %>% rename(stop_code = code),
+      read.csv2("results/easy_stop_names.csv") %>% select(Nazwa.przystanku, stop_code)) %>% 
+  na.omit %>% 
+  mutate(Nazwa.przystanku = as.character(Nazwa.przystanku))
+
+inner_join(
+  data.frame(stop_code = stops[["stop_code"]],
+                      reg = apply(gContains(shp1, p, byid = TRUE), 1, function(i) {
+                        reg <- unname(which(i))
+                        ifelse(length(reg) != 0, reg, NA)
+                      })
+),
+inner_join(cover_sum, stop_id) %>% 
+  group_by(Nazwa.przystanku, hour) %>% 
+  filter(stop_code == min(stop_code)) %>% 
+  ungroup()
+) %>% 
+  write.csv2("./results/stop_covers.csv", row.names = FALSE)
+
